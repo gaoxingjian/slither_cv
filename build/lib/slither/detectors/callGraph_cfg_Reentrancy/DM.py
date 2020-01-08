@@ -14,6 +14,10 @@ from slither.detectors.ICFG_Reentrancy.smallUtils import defenseModifier
 from slither.detectors.ICFG_Reentrancy.smallUtils import getadjMatrix
 from slither.detectors.ICFG_Reentrancy.testDFS import MyDeepGraph
 from slither.core.declarations import SolidityVariableComposed
+from slither.core.expressions.binary_operation import BinaryOperation
+from slither.core.expressions.expression import Expression
+from slither.core.expressions.tuple_expression import TupleExpression
+from slither.core.expressions.identifier import Identifier
 
 
 def allPaths_intToNode(allPathsInt, startToEndNodes):
@@ -25,6 +29,21 @@ def allPaths_intToNode(allPathsInt, startToEndNodes):
         allPathsNode.append(tempPath)
     return allPathsNode
 
+
+def exp_iteration(exp, var_list):
+    print(type(exp))
+    if isinstance(exp, Identifier):
+        var_list.append(exp.value)
+        return;
+    else:
+        if isinstance(exp, TupleExpression):
+            for exp in exp.expressions:
+        # exp = BinaryOperation(exp.expression_left, exp.expression_right, TupleExpression)
+                exp_iteration(exp.expression_left, var_list)
+                exp_iteration(exp.expression_right, var_list)
+        else:
+            exp_iteration(exp.expression_left, var_list)
+            exp_iteration(exp.expression_right, var_list)
 
 class DM:
 
@@ -49,6 +68,10 @@ class DM:
 
         for node in function.nodes:
             if node.contains_require_or_assert():
+                var_in_requires = []
+                for exp in node.expression.arguments:
+                    exp_iteration(exp, var_in_requires)
+                print(var_in_requires)
                 solidity_var_read = node.solidity_variables_read
                 if solidity_var_read:
                     for v in solidity_var_read:
