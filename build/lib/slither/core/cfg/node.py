@@ -351,6 +351,10 @@ class Node(SourceMapping, ChildFunction):
         return list(self._internal_calls)
 
     @property
+    def mml_solidity_calls(self):
+        return list(self._solidity_calls)
+
+    @property
     def high_level_calls(self):
         """
             list((Contract, Function|Variable)):
@@ -441,7 +445,7 @@ class Node(SourceMapping, ChildFunction):
         Returns:
             bool: True if the node has a require or assert call
         """
-        return any(c.name in ['require(bool)', 'require(bool,string)', 'assert(bool)'] for c in self.internal_calls)
+        return any(c.name in ['require(bool)', 'require(bool,string)', 'assert(bool)'] for c in self.internal_calls + self.mml_solidity_calls)
 
     def contains_if(self, include_loop=True):
         """

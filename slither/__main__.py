@@ -590,7 +590,9 @@ def main_impl(all_detector_classes, all_printer_classes):
                         (results_tmp, number_contracts_tmp) = process(filename, args, detector_classes, printer_classes)
                         number_contracts += number_contracts_tmp
                         results += results_tmp
+                        print(filename)
                     except SlitherException as se:
+                        print(filename)
                         continue
 
         else:

@@ -4,6 +4,7 @@ class MyDeepGraph:
         self.adjMetrix = [[0] * vertexNum for i in range(vertexNum)]
         self.visitedFlag = [False] * vertexNum
         self.pathStack = []
+
     def printMatrix(self):
         for everyRow in self.adjMetrix:
             print(everyRow)

@@ -11,7 +11,9 @@ from slither.slithir.variables import (Constant, LocalIRVariable,
                                        TemporaryVariableSSA, TupleVariableSSA)
 from slither.core.solidity_types.type import Type
 from slither.core.variables.local_variable import LocalVariable
+from slither.core.variables.state_variable import StateVariable
 from slither.detectors.ICFG_Reentrancy.smallUtils import defenseModifier
+from slither.detectors.callGraph_cfg_Reentrancy.DM import DM
 
 ###################################################################################
 ###################################################################################
@@ -197,8 +199,16 @@ def compute_dependency_contract(contract, slither): # slither.context['DATA_DEPE
         propagate_function(contract, function, KEY_SSA_UNPROTECTED, KEY_NON_SSA_UNPROTECTED)
 
         if function.visibility in ['public', 'external']:
+            if function.is_constructor:
+                continue
+            if function.modifiers:
+                for modifier in function.modifiers:
+                    if modifier.is_protected():
+                        continue
+            dm = DM(function)
+            haveDefenRequire = dm.requireMsgSender(function)
             defenseModifiers = defenseModifier()        # 含有可疑modifier的public function parameters不作为taint源头
-            if any(modifier.name in defenseModifiers for modifier in function.modifiers):
+            if any(modifier.name in defenseModifiers for modifier in function.modifiers) or haveDefenRequire is True:
                 continue
             [slither.context[KEY_INPUT].add(p) for p in function.parameters]
             [slither.context[KEY_INPUT_SSA].add(p) for p in function.parameters_ssa]

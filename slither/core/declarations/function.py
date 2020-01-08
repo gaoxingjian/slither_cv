@@ -958,6 +958,15 @@ class Function(ChildContract, ChildInheritance, SourceMapping):
         variables_read = [item for sublist in variables_read for item in sublist]
         return variable in variables_read
 
+    def reading_in_require_or_assert(self):
+        """
+        马明亮加的
+        :return:
+        """
+        variables_read = [n.variables_read for n in self.nodes if n.contains_require_or_assert()]
+        variables_read = [item for sublist in variables_read for item in sublist]
+        return variables_read
+
     def is_writing(self, variable):
         """
             Check if the function writes the variable
