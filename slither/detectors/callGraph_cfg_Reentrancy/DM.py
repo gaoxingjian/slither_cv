@@ -90,7 +90,7 @@ class DM:
         #             return True
         # return False
 
-    def advancedUpdateEth(self, function):
+    def advancedUpdateEth(self, function): # PPT，检查程序执行锁
         from slither.analyses.data_dependency.data_dependency import is_dependent
 
         allNodes = function.nodes
@@ -126,9 +126,10 @@ class DM:
                     if node.type == NodeType.ENDIF:
                         if careifNodeStack:
                             careifNodeStack.pop()
-                if careifNodeStack:  # eth被包裹在if中
+                if careifNodeStack:  # 被包裹在if语句中的Node
                     for careifNode in careifNodeStack:
                         care_if_StateVariablesRead |= set(careifNode.state_variables_read)
+                        print(careifNode.expression)
                     for stateVariableWritten in state_variables_written:
                         for careStateVariableRead in care_if_StateVariablesRead | care_RequireOrAssert_StateVariableRead:
                             result = is_dependent(stateVariableWritten, careStateVariableRead, function.contract)
