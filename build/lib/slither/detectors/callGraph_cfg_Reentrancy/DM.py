@@ -18,7 +18,14 @@ from slither.core.expressions.binary_operation import BinaryOperation
 from slither.core.expressions.expression import Expression
 from slither.core.expressions.tuple_expression import TupleExpression
 from slither.core.expressions.identifier import Identifier
+from slither.slithir.operations.binary import Binary
+from slither.slithir.operations.unary import Unary
+from slither.slithir.operations.condition import Condition
+from slither.slithir.operations.assignment import Assignment
+from z3 import *
 
+CONTROL_SYMBOL = ['&&', '||', '==', '!=', '!']
+import re
 
 def allPaths_intToNode(allPathsInt, startToEndNodes):
     allPathsNode = []
@@ -29,9 +36,34 @@ def allPaths_intToNode(allPathsInt, startToEndNodes):
         allPathsNode.append(tempPath)
     return allPathsNode
 
+def get_value_from_variable_name(var):
+    pass
+
+def get_type_from_variable_name(var):
+    pass
+
+def solve_expression(ssa_list, r_v):
+    for ssa in ssa_list:
+        if isinstance(ssa, Unary):
+            var_1 = Bool(ssa.rvalue.pure_name)
+            s = Solver()
+            right_value = BoolVal(r_v)
+            s.add(Not(var_1) == right_value)
+            if s.check() == sat:
+                s.reset()
+                return False
+        elif isinstance(ssa, Condition):
+            var_1 = Bool(ssa.value.pure_name)
+            s = Solver()
+            right_value = BoolVal(r_v)
+            s.add(var_1 == right_value)
+            if s.check() == sat:
+                s.reset()
+                return False
+        else:
+            return True
 
 def exp_iteration(exp, var_list):
-    print(type(exp))
     if isinstance(exp, Identifier):
         var_list.append(exp.value)
         return;
@@ -71,7 +103,6 @@ class DM:
                 var_in_requires = []
                 for exp in node.expression.arguments:
                     exp_iteration(exp, var_in_requires)
-                print(var_in_requires)
                 solidity_var_read = node.solidity_variables_read
                 if solidity_var_read:
                     for v in solidity_var_read:
@@ -94,6 +125,7 @@ class DM:
         from slither.analyses.data_dependency.data_dependency import is_dependent
 
         allNodes = function.nodes
+        path_between_sender_and_if = []
         for ethNode in function.ethNodes:
             entryPointToethNode = []
             entryPointToethNode.append(function.entry_point)
@@ -123,18 +155,49 @@ class DM:
                                 careifNodeStack.append(node)
                     if node.type == NodeType.IF:
                         careifNodeStack.append(node)
+                        path_between_sender_and_if.append(node)
                     if node.type == NodeType.ENDIF:
                         if careifNodeStack:
                             careifNodeStack.pop()
+                            path_between_sender_and_if = []
+                    else:
+                        path_between_sender_and_if.append(node)
                 if careifNodeStack:  # 被包裹在if语句中的Node
                     for careifNode in careifNodeStack:
                         care_if_StateVariablesRead |= set(careifNode.state_variables_read)
-                        print(careifNode.expression)
+                        # print(careifNode.irs_ssa)
+                        # print(careifNode.irs_ssa[0].lvalue, end = ' ')
+                        # print(careifNode.irs_ssa[0].rvalue, end = ' ')
+                        # print(careifNode.irs_ssa[0].type)
+                        # print(careifNode.irs_ssa[1].lvalue, end = ' ')
+                        # print(careifNode.irs_ssa[1].variable_left, end = ' ')
+                        # print(careifNode.irs_ssa[1].variable_right, end = ' ')
+                        # print(careifNode.irs_ssa[1].type)
+                        # print(careifNode.irs_ssa[2].value)
+                    
                     for stateVariableWritten in state_variables_written:
-                        for careStateVariableRead in care_if_StateVariablesRead | care_RequireOrAssert_StateVariableRead:
-                            result = is_dependent(stateVariableWritten, careStateVariableRead, function.contract)
-                            if result == True:
-                                return True
+                        if len(list(care_if_StateVariablesRead | care_RequireOrAssert_StateVariableRead)) > 1:
+                            return True
+                        careStateVariableRead = list(care_if_StateVariablesRead | care_RequireOrAssert_StateVariableRead)[0]
+                        for suspicious_node in path_between_sender_and_if:
+                            ir_list = suspicious_node.irs_ssa
+                            for ir in ir_list:
+                                # print(dir(ir))
+                                if isinstance(ir, Assignment):
+                                    if ir.lvalue.pure_name == careStateVariableRead.name:
+                                        r_v = ir.rvalue
+                                else:
+                                    continue
+                        for careifNode in careifNodeStack:
+                            symbol_result = solve_expression(careifNode.irs_ssa, r_v)
+                            if symbol_result == False:
+                                print("solving successfully")
+                            else:
+                                print("solving failed")
+                        result = is_dependent(stateVariableWritten, careStateVariableRead, function.contract)
+                        if result == True:
+                            return True
+                        
                                 # allPaths_Node.remove(path)
 
                 else:  # 如果 转账语句不在if block中

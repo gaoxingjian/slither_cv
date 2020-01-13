@@ -73,3 +73,7 @@ class LocalIRVariable(LocalVariable, SlithIRVariable):
                                              self.index,
                                              [v.name for v in self.refers_to])
         return '{}_{}'.format(self._name, self.index)
+
+    @property
+    def pure_name(self):
+        return self._name
