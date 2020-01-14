@@ -22,6 +22,9 @@ from slither.slithir.operations.binary import Binary
 from slither.slithir.operations.unary import Unary
 from slither.slithir.operations.condition import Condition
 from slither.slithir.operations.assignment import Assignment
+from slither.slithir.variables.local_variable import LocalIRVariable
+from slither.slithir.variables.state_variable import StateIRVariable
+from slither.core.declarations.solidity_variables import SolidityVariableComposed
 from z3 import *
 
 CONTROL_SYMBOL = ['&&', '||', '==', '!=', '!']
@@ -36,7 +39,14 @@ def allPaths_intToNode(allPathsInt, startToEndNodes):
         allPathsNode.append(tempPath)
     return allPathsNode
 
-def solve_expression(ssa_list, r_v):
+def solve_expression(ssa_list, r_v, var_list_length):
+    """
+    输入：ssa_list为单个语句的ssa们，r_v为已经获取的右值，var_list_length为if条件语句中变量的数量，如果大于一直接返回False，因为变量数量大于一的情况还没被解决
+    输出：返回solving结果，返回False表示PPT防御成功，不再检查代码，返回True表示PPT防御失败
+    功能：将if语句中的条件语句进行求解，将条件语句转换为一阶逻辑表达式并与已经获取的安全值r_v进行比较
+    """
+    if var_list_length > 1:
+        return False
     for ssa in ssa_list:
         if isinstance(ssa, Unary):
             var_1 = Bool(ssa.rvalue.pure_name)
@@ -57,19 +67,19 @@ def solve_expression(ssa_list, r_v):
         else:
             return True
 
-def exp_iteration(exp, var_list):
-    if isinstance(exp, Identifier):
-        var_list.append(exp.value)
-        return;
-    else:
-        if isinstance(exp, TupleExpression):
-            for exp in exp.expressions:
-        # exp = BinaryOperation(exp.expression_left, exp.expression_right, TupleExpression)
-                exp_iteration(exp.expression_left, var_list)
-                exp_iteration(exp.expression_right, var_list)
-        else:
-            exp_iteration(exp.expression_left, var_list)
-            exp_iteration(exp.expression_right, var_list)
+# def exp_iteration(exp, var_list):
+#     if isinstance(exp, Identifier):
+#         var_list.append(exp.value)
+#         return;
+#     else:
+#         if isinstance(exp, TupleExpression):
+#             for exp in exp.expressions:
+#         # exp = BinaryOperation(exp.expression_left, exp.expression_right, TupleExpression)
+#                 exp_iteration(exp.expression_left, var_list)
+#                 exp_iteration(exp.expression_right, var_list)
+#         else:
+#             exp_iteration(exp.expression_left, var_list)
+#             exp_iteration(exp.expression_right, var_list)
 
 class DM:
 
@@ -95,8 +105,27 @@ class DM:
         for node in function.nodes:
             if node.contains_require_or_assert():
                 var_in_requires = []
-                for exp in node.expression.arguments:
-                    exp_iteration(exp, var_in_requires)
+                for ir in node.irs_ssa:
+                    if isinstance(ir, Binary):
+                        left_right_variables = [ir.variable_left, ir.variable_right]
+                        var_1 = None; var_2 = None
+                        for var in left_right_variables:
+                            if isinstance(var, SolidityVariableComposed):
+                                var_1 = 'msg.sender'
+                                symbol_1 = BoolVal(True) # 如果这个是msg.sender变量，则为全局变量，全局变量用True表示
+                            elif isinstance(var, LocalIRVariable) or isinstance(var, StateIRVariable):
+                                var_2 = var.pure_name
+                                symbol_2 = BoolVal(True if isinstance(var, StateIRVariable) else False)
+                        s = Solver()
+                        s.add(symbol_1 == symbol_2)
+                        if s.check() == sat:
+                            print('global == global')
+                            return True
+                        else:
+                            print('global == local')
+                            return False
+                # for exp in node.expression.arguments:
+                #     exp_iteration(exp, var_in_requires)
                 solidity_var_read = node.solidity_variables_read
                 if solidity_var_read:
                     for v in solidity_var_read:
@@ -161,8 +190,6 @@ class DM:
                         care_if_StateVariablesRead |= set(careifNode.state_variables_read)
 
                     for stateVariableWritten in state_variables_written:
-                        if len(list(care_if_StateVariablesRead | care_RequireOrAssert_StateVariableRead)) > 1:
-                            return True
                         careStateVariableRead = list(care_if_StateVariablesRead | care_RequireOrAssert_StateVariableRead)[0]
                         for suspicious_node in path_between_sender_and_if:
                             ir_list = suspicious_node.irs_ssa
@@ -171,16 +198,17 @@ class DM:
                                     if ir.lvalue.pure_name == careStateVariableRead.name:
                                         r_v = ir.rvalue
                                 else:
+                                    r_v = None
                                     continue
+                        var_list_length = len(care_if_StateVariablesRead | care_RequireOrAssert_StateVariableRead)
                         for careifNode in careifNodeStack:
-                            symbol_result = solve_expression(careifNode.irs_ssa, r_v)
+                            symbol_result = solve_expression(careifNode.irs_ssa, r_v, var_list_length)
                             if symbol_result == False:
-                                return True
+                                return True 
                             else:
                                 result = is_dependent(stateVariableWritten, careStateVariableRead, function.contract)
                                 if result == True:
-                                    return True
-                        
+                                    return True # TODO: 为什么这个位置是True
                                 # allPaths_Node.remove(path)
 
                 else:  # 如果 转账语句不在if block中
