@@ -114,8 +114,6 @@ class EffectIcfgReentrancy(AbstractDetector):
                            cfgCandidateAllPath_Node.append(path)
 
                     if cfgCandidateAllPath_Node:   # 证明cfg本身就找到Reentrancy了，准备humanlook, 注意reversed, DM
-
-
                         human_cfgCandidateAllPath_Node = []
                         for path in cfgCandidateAllPath_Node:
                             tempPath = []
@@ -284,7 +282,7 @@ class EffectIcfgReentrancy(AbstractDetector):
                             havePublicCaller = callerVisibilityHavePublic(function, callGraph, dm)
                             haveDefenRequire = dm.requireMsgSender(function)
 
-                            if privateVisibility is True or haveDefenModifier is True or haveDefenRequire is True or function.is_protected() is True:
+                            if privateVisibility is True or haveDefenModifier is True or haveDefenRequire is True:
                                 accessPermision = True
                                 if havePublicCaller is True:
                                     reentrancyFlag = True

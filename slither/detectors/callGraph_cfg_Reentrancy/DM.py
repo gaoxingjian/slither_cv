@@ -258,6 +258,25 @@ class DM:
 
     def haveDefenseModifier(self, function):
         defenseModifiers = defenseModifier()
+        for node in function.modifiers[0].nodes:
+            if node.expression:
+                for ir in node.irs_ssa:
+                    if isinstance(ir, Binary):
+                        left_right_variables = [ir.variable_left, ir.variable_right]
+                        var_1 = None; var_2 = None
+                        for var in left_right_variables:
+                            if isinstance(var, SolidityVariableComposed):
+                                var_1 = 'msg.sender'
+                                symbol_1 = BoolVal(True) # 如果这个是msg.sender变量，则为全局变量，全局变量用True表示
+                            elif isinstance(var, LocalIRVariable) or isinstance(var, StateIRVariable):
+                                var_2 = var.pure_name
+                                symbol_2 = BoolVal(True if isinstance(var, StateIRVariable) else False)
+                        s = Solver()
+                        s.add(symbol_1 == symbol_2)
+                        if s.check() == sat:
+                            return True
+                        else:
+                            return False
         if any(modifier.name in defenseModifiers for modifier in function.modifiers):
             return True
         return False

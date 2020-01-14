@@ -67,19 +67,19 @@ def solve_expression(ssa_list, r_v, var_list_length):
         else:
             return True
 
-def exp_iteration(exp, var_list):
-    if isinstance(exp, Identifier):
-        var_list.append(exp.value)
-        return;
-    else:
-        if isinstance(exp, TupleExpression):
-            for exp in exp.expressions:
-        # exp = BinaryOperation(exp.expression_left, exp.expression_right, TupleExpression)
-                exp_iteration(exp.expression_left, var_list)
-                exp_iteration(exp.expression_right, var_list)
-        else:
-            exp_iteration(exp.expression_left, var_list)
-            exp_iteration(exp.expression_right, var_list)
+# def exp_iteration(exp, var_list):
+#     if isinstance(exp, Identifier):
+#         var_list.append(exp.value)
+#         return;
+#     else:
+#         if isinstance(exp, TupleExpression):
+#             for exp in exp.expressions:
+#         # exp = BinaryOperation(exp.expression_left, exp.expression_right, TupleExpression)
+#                 exp_iteration(exp.expression_left, var_list)
+#                 exp_iteration(exp.expression_right, var_list)
+#         else:
+#             exp_iteration(exp.expression_left, var_list)
+#             exp_iteration(exp.expression_right, var_list)
 
 class DM:
 
@@ -107,11 +107,6 @@ class DM:
                 var_in_requires = []
                 for ir in node.irs_ssa:
                     if isinstance(ir, Binary):
-                        print(type(ir.variable_left), end = ' ')
-                        print(ir.variable_left.name)
-                        print(type(ir.variable_right), end = ' ')
-                        print(ir.variable_right.pure_name)
-
                         left_right_variables = [ir.variable_left, ir.variable_right]
                         var_1 = None; var_2 = None
                         for var in left_right_variables:
@@ -263,6 +258,28 @@ class DM:
 
     def haveDefenseModifier(self, function):
         defenseModifiers = defenseModifier()
+        for node in function.modifiers[0].nodes:
+            if node.expression:
+                for ir in node.irs_ssa:
+                    if isinstance(ir, Binary):
+                        left_right_variables = [ir.variable_left, ir.variable_right]
+                        var_1 = None; var_2 = None
+                        for var in left_right_variables:
+                            if isinstance(var, SolidityVariableComposed):
+                                var_1 = 'msg.sender'
+                                symbol_1 = BoolVal(True) # 如果这个是msg.sender变量，则为全局变量，全局变量用True表示
+                            elif isinstance(var, LocalIRVariable) or isinstance(var, StateIRVariable):
+                                var_2 = var.pure_name
+                                symbol_2 = BoolVal(True if isinstance(var, StateIRVariable) else False)
+                        s = Solver()
+                        s.add(symbol_1 == symbol_2)
+                        if s.check() == sat:
+                            print('global == global')
+                            return True
+                        else:
+                            print('global == local')
+                            return False
+                            
         if any(modifier.name in defenseModifiers for modifier in function.modifiers):
             return True
         return False

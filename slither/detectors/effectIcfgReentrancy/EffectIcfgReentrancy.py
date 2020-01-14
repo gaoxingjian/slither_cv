@@ -114,8 +114,6 @@ class EffectIcfgReentrancy(AbstractDetector):
                            cfgCandidateAllPath_Node.append(path)
 
                     if cfgCandidateAllPath_Node:   # 证明cfg本身就找到Reentrancy了，准备humanlook, 注意reversed, DM
-
-
                         human_cfgCandidateAllPath_Node = []
                         for path in cfgCandidateAllPath_Node:
                             tempPath = []
