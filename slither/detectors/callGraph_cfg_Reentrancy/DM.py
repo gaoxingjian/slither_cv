@@ -39,14 +39,12 @@ def allPaths_intToNode(allPathsInt, startToEndNodes):
         allPathsNode.append(tempPath)
     return allPathsNode
 
-def solve_expression(ssa_list, r_v, var_list_length):
+def solve_expression(ssa_list, r_v):
     """
     输入：ssa_list为单个语句的ssa们，r_v为已经获取的右值，var_list_length为if条件语句中变量的数量，如果大于一直接返回False，因为变量数量大于一的情况还没被解决
     输出：返回solving结果，返回False表示PPT防御成功，不再检查代码，返回True表示PPT防御失败
     功能：将if语句中的条件语句进行求解，将条件语句转换为一阶逻辑表达式并与已经获取的安全值r_v进行比较
     """
-    if var_list_length > 1:
-        return False
     for ssa in ssa_list:
         if isinstance(ssa, Unary):
             var_1 = Bool(ssa.rvalue.pure_name)
@@ -109,20 +107,21 @@ class DM:
                     if isinstance(ir, Binary):
                         left_right_variables = [ir.variable_left, ir.variable_right]
                         var_1 = None; var_2 = None
+                        symbol_1 = None; symbol_2 = None
                         for var in left_right_variables:
                             if isinstance(var, SolidityVariableComposed):
                                 var_1 = 'msg.sender'
                                 symbol_1 = BoolVal(True) # 如果这个是msg.sender变量，则为全局变量，全局变量用True表示
-                            elif isinstance(var, LocalIRVariable) or isinstance(var, StateIRVariable):
+                            if isinstance(var, LocalIRVariable) or isinstance(var, StateIRVariable):
                                 var_2 = var.pure_name
                                 symbol_2 = BoolVal(True if isinstance(var, StateIRVariable) else False)
                         s = Solver()
                         s.add(symbol_1 == symbol_2)
                         if s.check() == sat:
-                            print('global == global')
+                            # print('global == global')
                             return True
                         else:
-                            print('global == local')
+                            # print('global == local')
                             return False
                 # for exp in node.expression.arguments:
                 #     exp_iteration(exp, var_in_requires)
@@ -190,19 +189,27 @@ class DM:
                         care_if_StateVariablesRead |= set(careifNode.state_variables_read)
 
                     for stateVariableWritten in state_variables_written:
+                        if len(care_if_StateVariablesRead | care_RequireOrAssert_StateVariableRead) > 1:
+                            return True
+                        if len(care_if_StateVariablesRead | care_RequireOrAssert_StateVariableRead) == 0:
+                            return True
                         careStateVariableRead = list(care_if_StateVariablesRead | care_RequireOrAssert_StateVariableRead)[0]
                         for suspicious_node in path_between_sender_and_if:
                             ir_list = suspicious_node.irs_ssa
                             for ir in ir_list:
                                 if isinstance(ir, Assignment):
-                                    if ir.lvalue.pure_name == careStateVariableRead.name:
-                                        r_v = ir.rvalue
+                                    if hasattr(ir.lvalue, 'pure_name'):
+                                        if ir.lvalue.pure_name == careStateVariableRead.name:
+                                            r_v = ir.rvalue
+                                    else:
+                                        if ir.lvalue.name == careStateVariableRead.name:
+                                            r_v = ir.rvalue
                                 else:
                                     r_v = None
                                     continue
                         var_list_length = len(care_if_StateVariablesRead | care_RequireOrAssert_StateVariableRead)
                         for careifNode in careifNodeStack:
-                            symbol_result = solve_expression(careifNode.irs_ssa, r_v, var_list_length)
+                            symbol_result = solve_expression(careifNode.irs_ssa, r_v)
                             if symbol_result == False:
                                 return True 
                             else:
@@ -258,25 +265,27 @@ class DM:
 
     def haveDefenseModifier(self, function):
         defenseModifiers = defenseModifier()
-        for node in function.modifiers[0].nodes:
-            if node.expression:
-                for ir in node.irs_ssa:
-                    if isinstance(ir, Binary):
-                        left_right_variables = [ir.variable_left, ir.variable_right]
-                        var_1 = None; var_2 = None
-                        for var in left_right_variables:
-                            if isinstance(var, SolidityVariableComposed):
-                                var_1 = 'msg.sender'
-                                symbol_1 = BoolVal(True) # 如果这个是msg.sender变量，则为全局变量，全局变量用True表示
-                            elif isinstance(var, LocalIRVariable) or isinstance(var, StateIRVariable):
-                                var_2 = var.pure_name
-                                symbol_2 = BoolVal(True if isinstance(var, StateIRVariable) else False)
-                        s = Solver()
-                        s.add(symbol_1 == symbol_2)
-                        if s.check() == sat:
-                            return True
-                        else:
-                            return False
+        for modifier in function.modifiers:
+            for node in modifier.nodes:
+                if node.expression:
+                    for ir in node.irs_ssa:
+                        if isinstance(ir, Binary):
+                            left_right_variables = [ir.variable_left, ir.variable_right]
+                            var_1 = None; var_2 = None
+                            symbol_1 = None; symbol_2 = None
+                            for var in left_right_variables:
+                                if isinstance(var, SolidityVariableComposed):
+                                    var_1 = 'msg.sender'
+                                    symbol_1 = BoolVal(True) # 如果这个是msg.sender变量，则为全局变量，全局变量用True表示
+                                if isinstance(var, LocalIRVariable) or isinstance(var, StateIRVariable):
+                                    var_2 = var.pure_name
+                                    symbol_2 = BoolVal(True if isinstance(var, StateIRVariable) else False)
+                            s = Solver()
+                            s.add(symbol_1 == symbol_2)
+                            if s.check() == sat:
+                                return True
+                            else:
+                                return False
         if any(modifier.name in defenseModifiers for modifier in function.modifiers):
             return True
         return False

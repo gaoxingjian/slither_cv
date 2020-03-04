@@ -28,6 +28,10 @@ class TemporaryVariable(ChildNode, Variable):
     @property
     def name(self):
         return 'TMP_{}'.format(self.index)
+    
+    @property
+    def pure_name(self):
+        return 'TMP_{}'.format(self.index)
 
     def __str__(self):
         return self.name

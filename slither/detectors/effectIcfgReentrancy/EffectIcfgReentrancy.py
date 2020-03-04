@@ -73,17 +73,15 @@ class EffectIcfgReentrancy(AbstractDetector):
         return []
 
     def detect_reentrancy(self, contract, ethNodeList, taintNodeList, callGraph):
-        print('Start Contract {}'.format(contract.name))
+        # print('Start Contract {}'.format(contract.name))
         for function in contract.functions:
             if function.is_implemented:
-                print('\tTo analyze：{}.{}'.format(function.contract.name, function.full_name))
+                # print('\tFunction：{}.{}'.format(function.contract.name, function.full_name))
                 dm = DM(function)   # 声明dm防御对象
                 reentrancyFlag = False
 
                 # for node in function.nodes:
                 #     self._node_taint(node)
-
-
 
                 function_ethNodeList = []   # 存储本函数体内的eth
                 functon_taintNodeList = []  # 存储本函数体内的taint
@@ -134,7 +132,7 @@ class EffectIcfgReentrancy(AbstractDetector):
                             # print('haveDefenModifier: ', haveDefenModifier)
                             # print('haveDefenRequire: ', haveDefenRequire)
                             # print('function.is_protected() ', function.is_protected())
-                            # accessPermision = True
+                            accessPermision = True
                             # havePublicCaller = True
                             if havePublicCaller is True:
                                 reentrancyFlag = True
@@ -162,7 +160,7 @@ class EffectIcfgReentrancy(AbstractDetector):
                     careEthFunction = set()
                     callGraphToTaintAllPath_Node = []
                     callGraphToEthAllPath_Node = []
-                    print('\t\tcfg分析安全，所以开始ICFG的分析'.format(function.full_name))
+                    # print('\t\tcfg分析安全，所以开始ICFG的分析'.format(function.full_name))
                     currentFunctionNode = callGraph.function_Map_node.get(function)
 
                     '''
