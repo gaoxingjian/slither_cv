@@ -1,4 +1,7 @@
-# Slither, the Solidity source analyzer
+# Clairvoyance
+
+The project Clairvoyance is based on an open-sourced smart contract analyze tool Slither. For usage please install Slither first and detect vulnerabilities with detector named with "EffectIcfgReentrancy".
+
 <img src="./logo.png" alt="Logo" width="500"/>
 
 [![Build Status](https://travis-ci.com/crytic/slither.svg?token=JEF97dFy1QsDCfQ2Wusd&branch=master)](https://travis-ci.com/crytic/slither)
@@ -29,7 +32,7 @@ slither .
 Run Slither on a single file:
 ``` 
 $ slither tests/uninitialized.sol 
-``` 
+```
 
 For additional configuration, see the [usage](https://github.com/trailofbits/slither/wiki/Usage) documentation.
 
