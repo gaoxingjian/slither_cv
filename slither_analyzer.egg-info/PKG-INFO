@@ -5,7 +5,10 @@ Summary: Slither is a Solidity static analysis framework written in Python 3.
 Home-page: https://github.com/crytic/slither
 Author: Trail of Bits
 License: AGPL-3.0
-Description: # Slither, the Solidity source analyzer
+Description: # Clairvoyance
+        
+        The project Clairvoyance is based on an open-sourced smart contract analyze tool Slither. For usage please install Slither first and detect vulnerabilities with detector named with "EffectIcfgReentrancy".
+        
         <img src="./logo.png" alt="Logo" width="500"/>
         
         [![Build Status](https://travis-ci.com/crytic/slither.svg?token=JEF97dFy1QsDCfQ2Wusd&branch=master)](https://travis-ci.com/crytic/slither)
@@ -36,7 +39,7 @@ Description: # Slither, the Solidity source analyzer
         Run Slither on a single file:
         ``` 
         $ slither tests/uninitialized.sol 
-        ``` 
+        ```
         
         For additional configuration, see the [usage](https://github.com/trailofbits/slither/wiki/Usage) documentation.
         

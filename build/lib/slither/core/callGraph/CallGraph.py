@@ -121,6 +121,9 @@ class CallGraph:
                 self._ethFunctionNodes.append(functionNode)
             self._FunctionNodes.append(functionNode)
             self.function_Map_node[function] = functionNode
+            # if function.full_name == "releaseTokensTo(address)" and function.contract.name == "Reservation":
+            #     print("很爱很爱你")
+            #     print(functionNode)
             self._all_contracts.add(function.contract)
 
     @property

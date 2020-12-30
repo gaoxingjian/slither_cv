@@ -88,6 +88,12 @@ slither/detectors/ICFG_Reentrancy/smallUtils.py
 slither/detectors/ICFG_Reentrancy/testDFS.py
 slither/detectors/ICFG_Reentrancy/icfg/ICFG.py
 slither/detectors/ICFG_Reentrancy/icfg/__init__.py
+slither/detectors/ICFG_Reentrancy_Old/ICFGreentrancy.py
+slither/detectors/ICFG_Reentrancy_Old/__init__.py
+slither/detectors/ICFG_Reentrancy_Old/smallUtils.py
+slither/detectors/ICFG_Reentrancy_Old/testDFS.py
+slither/detectors/ICFG_Reentrancy_Old/icfg/ICFG.py
+slither/detectors/ICFG_Reentrancy_Old/icfg/__init__.py
 slither/detectors/attributes/__init__.py
 slither/detectors/attributes/const_functions.py
 slither/detectors/attributes/constant_pragma.py

@@ -10,6 +10,7 @@ from crytic_compile import CryticCompile, InvalidCompilation
 
 from slither.detectors.abstract_detector import AbstractDetector, DetectorClassification
 from slither.printers.abstract_printer import AbstractPrinter
+
 from .solc_parsing.slitherSolc import SlitherSolc
 from .exceptions import SlitherError
 

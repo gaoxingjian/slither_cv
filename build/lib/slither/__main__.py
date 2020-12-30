@@ -29,6 +29,7 @@ from slither.exceptions import SlitherException
 logging.basicConfig()
 logger = logging.getLogger("Slither")
 
+
 ###################################################################################
 ###################################################################################
 # region Process functions
@@ -51,6 +52,7 @@ def process(filename, args, detector_classes, printer_classes):
                       **vars(args))
 
     return _process(slither, detector_classes, printer_classes)
+
 
 def _process(slither, detector_classes, printer_classes):
     for detector_cls in detector_classes:
@@ -93,6 +95,7 @@ def process_files(filenames, args, detector_classes, printer_classes):
 
     return _process(slither, detector_classes, printer_classes)
 
+
 # endregion
 ###################################################################################
 ###################################################################################
@@ -131,6 +134,7 @@ def output_json(results, filename):
         else:
             with open(filename, 'w', encoding='utf8') as f:
                 json.dump(json_result, f, indent=2)
+
 
 # endregion
 ###################################################################################
@@ -180,6 +184,7 @@ def get_detectors_and_printers():
         printers += list(plugin_printers)
 
     return detectors, printers
+
 
 def choose_detectors(args, all_detector_classes):
     # If detectors are specified, run only these ones
@@ -242,6 +247,7 @@ def choose_printers(args, all_printer_classes):
             raise Exception('Error: {} is not a printer'.format(p))
     return printers_to_run
 
+
 # endregion
 ###################################################################################
 ###################################################################################
@@ -253,6 +259,7 @@ def parse_filter_paths(args):
     if args.filter_paths:
         return args.filter_paths.split(',')
     return []
+
 
 # Those are the flags shared by the command line and the config file
 defaults_flag_in_config = {
@@ -278,11 +285,13 @@ defaults_flag_in_config = {
     # debug command
     'legacy_ast': False,
     'ignore_return_value': False
-    }
+}
+
 
 def parse_args(detector_classes, printer_classes):
-    parser = argparse.ArgumentParser(description='Slither. For usage information, see https://github.com/crytic/slither/wiki/Usage',
-                                     usage="slither.py contract.sol [flag]")
+    parser = argparse.ArgumentParser(
+        description='Slither. For usage information, see https://github.com/crytic/slither/wiki/Usage',
+        usage="slither.py contract.sol [flag]")
 
     parser.add_argument('filename',
                         help='contract.sol')
@@ -301,7 +310,7 @@ def parse_args(detector_classes, printer_classes):
     group_detector.add_argument('--detect',
                                 help='Comma-separated list of detectors, defaults to all, '
                                      'available detectors: {}'.format(
-                                         ', '.join(d.ARGUMENT for d in detector_classes)),
+                                    ', '.join(d.ARGUMENT for d in detector_classes)),
                                 action='store',
                                 dest='detectors_to_run',
                                 default=defaults_flag_in_config['detectors_to_run'])
@@ -309,7 +318,7 @@ def parse_args(detector_classes, printer_classes):
     group_printer.add_argument('--print',
                                help='Comma-separated list fo contract information printers, '
                                     'available printers: {}'.format(
-                                        ', '.join(d.ARGUMENT for d in printer_classes)),
+                                   ', '.join(d.ARGUMENT for d in printer_classes)),
                                action='store',
                                dest='printers_to_run',
                                default=defaults_flag_in_config['printers_to_run'])
@@ -357,12 +366,10 @@ def parse_args(detector_classes, printer_classes):
                                 action='store_true',
                                 default=defaults_flag_in_config['exclude_high'])
 
-
     group_misc.add_argument('--json',
                             help='Export the results as a JSON file ("--json -" to export to stdout)',
                             action='store',
                             default=defaults_flag_in_config['json'])
-
 
     group_misc.add_argument('--disable-color',
                             help='Disable output colorization',
@@ -402,7 +409,6 @@ def parse_args(detector_classes, printer_classes):
                         help=argparse.SUPPRESS,
                         action=OutputMarkdown,
                         default=False)
-
 
     group_misc.add_argument('--checklist',
                             help=argparse.SUPPRESS,
@@ -457,11 +463,13 @@ def parse_args(detector_classes, printer_classes):
 
     return args
 
+
 class ListDetectors(argparse.Action):
     def __call__(self, parser, *args, **kwargs):
         detectors, _ = get_detectors_and_printers()
         output_detectors(detectors)
         parser.exit()
+
 
 class ListDetectorsJson(argparse.Action):
     def __call__(self, parser, *args, **kwargs):
@@ -469,17 +477,20 @@ class ListDetectorsJson(argparse.Action):
         output_detectors_json(detectors)
         parser.exit()
 
+
 class ListPrinters(argparse.Action):
     def __call__(self, parser, *args, **kwargs):
         _, printers = get_detectors_and_printers()
         output_printers(printers)
         parser.exit()
 
+
 class OutputMarkdown(argparse.Action):
     def __call__(self, parser, args, values, option_string=None):
         detectors, printers = get_detectors_and_printers()
         output_to_markdown(detectors, printers, values)
         parser.exit()
+
 
 class OutputWiki(argparse.Action):
     def __call__(self, parser, args, values, option_string=None):
@@ -498,7 +509,7 @@ class OutputWiki(argparse.Action):
 
 class FormatterCryticCompile(logging.Formatter):
     def format(self, record):
-        #for i, msg in enumerate(record.msg):
+        # for i, msg in enumerate(record.msg):
         if record.msg.startswith('Compilation warnings/errors on '):
             txt = record.args[1]
             txt = txt.split('\n')
@@ -506,6 +517,7 @@ class FormatterCryticCompile(logging.Formatter):
             txt = '\n'.join(txt)
             record.args = (record.args[0], txt)
         return super().format(record)
+
 
 # endregion
 ###################################################################################
@@ -552,7 +564,7 @@ def main_impl(all_detector_classes, all_printer_classes):
                               ('TypeParsing', default_log),
                               ('SSA_Conversion', default_log),
                               ('Printers', default_log),
-                              #('CryticCompile', default_log)
+                              # ('CryticCompile', default_log)
                               ]:
         l = logging.getLogger(l_name)
         l.setLevel(l_level)
@@ -633,11 +645,7 @@ def main_impl(all_detector_classes, all_printer_classes):
         sys.exit(-1)
 
 
-
 if __name__ == '__main__':
     main()
 
-
-
 # endregion
-
